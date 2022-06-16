@@ -7,14 +7,21 @@ import json, os, time
 
 RES = 9
 
+def progress_bar(progress, total):
+    percent = 100 * (progress / total)
+    bar = '█' * int(percent) + "▒" * (100 - int(percent))
+    print(f"\r[{bar}] {percent:.2f}%", end="\r")
+
 
 def load():
     frames = ""
     start = time.time()
     
     vid = cv2.VideoCapture("src/Bad Apple.mp4")
+    total_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
     success, image = vid.read()
     count = 0
+    progress_bar(count, total_frames)
     while success:
         frame_data = ""
         line_data = []
@@ -54,12 +61,12 @@ def load():
         frame_data = frame_data[:-1]
         
         frames += f"{frame_data}\n"
-        print(f"Frame {count+1} Extracted")
 
         success, image = vid.read()
         count += 1
+        progress_bar(count, total_frames)
         
-    print(f"Loaded {count+1} frames in {time.time()-start} seconds")
+    print(f"\nLoaded {count+1} frames in {time.time()-start} seconds")
     start = time.time()
     with open("src/frames.txt", "w") as f:
         f.write(frames)
@@ -72,7 +79,8 @@ def decompress_frames(frames):
         return df
     frames = frames.split("\n")
     decompressed_frames = []
-    for index, frame in enumerate(frames):
+    progress_bar(0, len(frames))
+    for findex, frame in enumerate(frames):
         if frame == "":
             continue
         lines = frame.split("|")
@@ -86,6 +94,8 @@ def decompress_frames(frames):
                     frame_ += color
             frame_ += "\n"
         decompressed_frames.append(frame_)
+        progress_bar(findex+1, len(frames)-1)
+    print("\n")
     if not os.path.isdir("cache"):
         os.mkdir("cache")
     with open("cache/decompressed_frames.json", "w") as f:
@@ -94,7 +104,8 @@ def decompress_frames(frames):
 
 def frames_to_coords(frames):
     data = []
-    for frame in frames:
+    progress_bar(0, len(frames))
+    for index, frame in enumerate(frames):
         frmae_data = {"white": {"x": [], "y": []}, "black": {"x": [], "y": []}}
         lines = frame.split("\n")
         for y_, line in enumerate(lines):
@@ -108,6 +119,8 @@ def frames_to_coords(frames):
                     frmae_data["black"]["x"].append(x)
                     frmae_data["black"]["y"].append(y)
         data.append(frmae_data)
+        progress_bar(index+1, len(frames))
+    print("\n")
     return data
 
 
