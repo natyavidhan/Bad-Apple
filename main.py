@@ -67,10 +67,12 @@ def load():
     return frames
 
 def decompress_frames(frames):
+    if os.path.isfile("cache/decompressed_frames.json"):
+        df = json.load(open("cache/decompressed_frames.json"))
+        return df
     frames = frames.split("\n")
     decompressed_frames = []
     for index, frame in enumerate(frames):
-        # print(f"Frame: {frame}")
         if frame == "":
             continue
         lines = frame.split("|")
@@ -78,14 +80,16 @@ def decompress_frames(frames):
         for line in lines:
             line_data_ = ""
             line_data = line.split(",")
-            # print(f"Frame Line: {line}")
             for index, line_ in enumerate(line_data):
-                # print(f"Line but in list format: {line_}")
                 color, number = line_.split(" ")
                 for i in range(int(number)):
                     frame_ += color
             frame_ += "\n"
         decompressed_frames.append(frame_)
+    if not os.path.isdir("cache"):
+        os.mkdir("cache")
+    with open("cache/decompressed_frames.json", "w") as f:
+        json.dump(decompressed_frames, f)
     return decompressed_frames
 
 def frames_to_coords(frames):
@@ -95,12 +99,14 @@ def frames_to_coords(frames):
         lines = frame.split("\n")
         for y_, line in enumerate(lines):
             for x_, px in enumerate(line):
+                x = x_
+                y = 720//RES - y_
                 if px == "0":
-                    frmae_data["white"]["x"].append(x_)
-                    frmae_data["white"]["y"].append(y_)
+                    frmae_data["white"]["x"].append(x)
+                    frmae_data["white"]["y"].append(y)
                 else:
-                    frmae_data["black"]["x"].append(x_)
-                    frmae_data["black"]["y"].append(y_)
+                    frmae_data["black"]["x"].append(x)
+                    frmae_data["black"]["y"].append(y)
         data.append(frmae_data)
     return data
 
@@ -109,23 +115,19 @@ def start_animation(frames):
     plt.ion()
     fig, ax = plt.subplots()
     x, y = [],[]
-    bsc = ax.scatter(x,y, s=15, c='black')
     wsc = ax.scatter(x,y, s=15, c='white')
+    bsc = ax.scatter(x,y, s=15, c='black')
     plt.xlim(0,960//RES)
     plt.ylim(0,720//RES)
     plt.draw()
 
     for index, frame in enumerate(frames):
-        # x, y = frame['x'], frame['y']
-        # sc.set_offsets(np.c_[x,y])
-        # fig.canvas.draw_idle()
-        # plt.pause(0.006)
         wx, wy = frame['white']['x'], frame['white']['y']
         bx, by = frame['black']['x'], frame['black']['y']
         wsc.set_offsets(np.c_[wx,wy])
         bsc.set_offsets(np.c_[bx,by])
         fig.canvas.draw_idle()
-        plt.pause(0.006)
+        plt.pause(0.0000001)
 
     plt.waitforbuttonpress()
 
